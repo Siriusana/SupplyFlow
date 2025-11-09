@@ -8,27 +8,28 @@ import { exportRelatoriosToExcel, exportRelatoriosToPDF } from '../utils/exportU
 export function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [gastosMensais, setGastosMensais] = useState<any[]>([]);
+  const [gastosMensaisAll, setGastosMensaisAll] = useState<any[]>([]);
   const [gastosPorCategoria, setGastosPorCategoria] = useState<any[]>([]);
   const [indicadores, setIndicadores] = useState<any>({});
   const [topFornecedores, setTopFornecedores] = useState<any[]>([]);
+  const [distribuicaoFornecedores, setDistribuicaoFornecedores] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
-  useEffect(() => {
-    loadRelatorios();
-  }, []);
-
-  const loadRelatorios = async () => {
+  const loadRelatorios = async (year?: string) => {
     try {
       setLoading(true);
-      const response = await relatoriosAPI.getAll();
+      const response = await relatoriosAPI.getAll(year ? { year } : undefined);
       const data = response.data;
 
       // Gastos mensais
       if (data.gastosMensais) {
-        setGastosMensais(data.gastosMensais.map((g: any) => ({
+        const gastos = data.gastosMensais.map((g: any) => ({
           mes: g.name,
           valor: g.valor,
           meta: g.meta || null,
-        })));
+        }));
+        setGastosMensaisAll(gastos);
+        setGastosMensais(gastos);
       }
 
       // Gastos por categoria
@@ -48,6 +49,11 @@ export function Relatorios() {
       if (data.topFornecedores) {
         setTopFornecedores(data.topFornecedores);
       }
+
+      // Distribuição de fornecedores
+      if (data.distribuicaoFornecedores) {
+        setDistribuicaoFornecedores(data.distribuicaoFornecedores);
+      }
     } catch (error) {
       console.error('Erro ao carregar relatórios:', error);
     } finally {
@@ -55,12 +61,13 @@ export function Relatorios() {
     }
   };
 
-  const distribuicaoFornecedores = [
-    { name: 'Top 5 Fornecedores', value: 65 },
-    { name: 'Outros', value: 35 },
-  ];
-
   const pieColors = ['#8b5cf6', '#3b82f6'];
+
+  // Carregar dados inicialmente e quando o ano mudar
+  useEffect(() => {
+    loadRelatorios(selectedYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear]);
 
   const indicadoresList = [
     {
@@ -90,8 +97,8 @@ export function Relatorios() {
     {
       titulo: 'Fornecedores Ativos',
       valor: indicadores.fornecedoresAtivos || 0,
-      percentual: '-2%',
-      trend: 'down',
+      percentual: indicadores.fornecedoresAtivosPercentual || '0%',
+      trend: parseFloat(indicadores.fornecedoresAtivosPercentual?.replace('%', '') || '0') >= 0 ? 'up' : 'down',
       icon: Users,
       color: 'from-orange-500 to-red-500',
     },
@@ -230,10 +237,14 @@ export function Relatorios() {
         <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-white">Gastos Mensais vs Meta</h3>
-            <select className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none">
-              <option>2025</option>
-              <option>2024</option>
-              <option>2023</option>
+            <select 
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none cursor-pointer"
+            >
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
             </select>
           </div>
           {gastosMensais.length > 0 ? (
@@ -249,6 +260,13 @@ export function Relatorios() {
                     borderRadius: '12px',
                     color: '#fff',
                   }}
+                  itemStyle={{
+                    color: '#fff',
+                  }}
+                  labelStyle={{
+                    color: '#fff',
+                  }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
                 />
                 <Legend />
                 <Line
@@ -293,6 +311,13 @@ export function Relatorios() {
                     borderRadius: '12px',
                     color: '#fff',
                   }}
+                  itemStyle={{
+                    color: '#fff',
+                  }}
+                  labelStyle={{
+                    color: '#fff',
+                  }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
                 />
                 <Bar dataKey="valor" fill="url(#barGradient2)" radius={[8, 8, 0, 0]} />
                 <defs>
@@ -316,48 +341,56 @@ export function Relatorios() {
         {/* Distribuição Fornecedores */}
         <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
           <h3 className="text-white mb-4">Concentração de Fornecedores</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={distribuicaoFornecedores}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {distribuicaoFornecedores.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={pieColors[index]} />
+          {distribuicaoFornecedores && distribuicaoFornecedores.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={distribuicaoFornecedores}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {distribuicaoFornecedores.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={pieColors[index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #ffffff20',
+                      borderRadius: '12px',
+                      color: '#fff',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-center gap-4 mt-4">
+                {distribuicaoFornecedores.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: pieColors[index] }}
+                    />
+                    <span className="text-white/60 text-sm">{item.name}</span>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #ffffff20',
-                  borderRadius: '12px',
-                  color: '#fff',
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex justify-center gap-4 mt-4">
-            {distribuicaoFornecedores.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: pieColors[index] }}
-                />
-                <span className="text-white/60 text-sm">{item.name}</span>
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-white/60">
+              Nenhum dado disponível
+            </div>
+          )}
         </div>
 
         {/* Top Fornecedores */}
         <div className="col-span-2 p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
           <h3 className="text-white mb-4">Top 5 Fornecedores</h3>
-          {topFornecedores.length > 0 ? (
+          {topFornecedores && topFornecedores.length > 0 ? (
             <div className="space-y-3">
               {topFornecedores.map((fornecedor: any, index: number) => (
                 <div
@@ -368,14 +401,24 @@ export function Relatorios() {
                     {index + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="text-white">{fornecedor.nome}</p>
-                    <p className="text-white/60 text-sm">{fornecedor.pedidos} pedidos</p>
+                    <p className="text-white">{fornecedor.nome || 'N/A'}</p>
+                    <p className="text-white/60 text-sm">
+                      {fornecedor.categoria || 'Sem categoria'} • {fornecedor.pedidos || 0} pedidos
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white">{fornecedor.total}</p>
-                    <p className="text-green-400 text-sm">
-                      {fornecedor.economia} economia
+                    <p className="text-white">
+                      {typeof fornecedor.total === 'string' 
+                        ? fornecedor.total 
+                        : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.total || 0)}
                     </p>
+                    {fornecedor.economia && (
+                      <p className="text-green-400 text-sm">
+                        Economia: {typeof fornecedor.economia === 'string' 
+                          ? fornecedor.economia 
+                          : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.economia || 0)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -412,7 +455,7 @@ export function Relatorios() {
               </div>
               <div>
                 <p className="text-white/60 text-sm mb-1">Tempo Médio de Aprovação</p>
-                <p className="text-white text-xl">2.3 dias</p>
+                <p className="text-white text-xl">{indicadores.tempoMedioAprovacao || '0 dias'}</p>
               </div>
             </div>
           </div>

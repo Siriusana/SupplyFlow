@@ -73,12 +73,41 @@ export class FornecedorController {
 
   async create(req: AuthRequest, res: Response) {
     try {
+      const { nome, categoria, cnpj, email, telefone, endereco } = req.body;
+      
+      if (!nome || !categoria || !email) {
+        return res.status(400).json({ message: 'Campos obrigatórios: nome, categoria, email' });
+      }
+
       const fornecedorRepository = AppDataSource.getRepository(Fornecedor);
-      const fornecedor = fornecedorRepository.create(req.body);
+      
+      // Verificar se já existe fornecedor com mesmo CNPJ
+      if (cnpj) {
+        const existing = await fornecedorRepository.findOne({ where: { cnpj } });
+        if (existing) {
+          return res.status(400).json({ message: 'Já existe um fornecedor com este CNPJ' });
+        }
+      }
+
+      const fornecedor = fornecedorRepository.create({
+        nome,
+        categoria,
+        cnpj: cnpj || '',
+        email,
+        telefone: telefone || '',
+        endereco: endereco || '',
+        avaliacao: req.body.avaliacao || 0,
+        status: req.body.status || 'Ativo',
+        totalPedidos: req.body.totalPedidos || 0,
+      });
+      
       await fornecedorRepository.save(fornecedor);
       res.status(201).json(fornecedor);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating fornecedor:', error);
+      if (error.code === 'SQLITE_CONSTRAINT' || error.code === '23505') {
+        return res.status(400).json({ message: 'Erro de validação: dados duplicados ou inválidos' });
+      }
       res.status(500).json({ message: 'Erro ao criar fornecedor' });
     }
   }

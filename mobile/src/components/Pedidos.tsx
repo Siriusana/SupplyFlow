@@ -41,11 +41,19 @@ export function Pedidos() {
   };
 
   const formatCurrency = (value: number) => {
+    if (!value || isNaN(value)) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
   const getStatusConfig = (status: string) => {
@@ -130,16 +138,20 @@ export function Pedidos() {
                 <View style={styles.cardBody}>
                   <View style={styles.cardRow}>
                     <Text style={styles.cardLabel}>Valor Total:</Text>
-                    <Text style={styles.cardValue}>{formatCurrency(item.valorTotal)}</Text>
+                    <Text style={styles.cardValue}>
+                      {formatCurrency(item.valor || item.valorTotal || 0)}
+                    </Text>
                   </View>
                   <View style={styles.cardRow}>
                     <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
-                    <Text style={styles.cardText}>{formatDate(item.data)}</Text>
+                    <Text style={styles.cardText}>
+                      {formatDate(item.dataPedido || item.data || '')}
+                    </Text>
                   </View>
-                  {item.rastreamento && (
+                  {(item.rastreio || item.rastreamento) && (
                     <View style={styles.cardRow}>
                       <Ionicons name="location-outline" size={16} color={colors.text.tertiary} />
-                      <Text style={styles.cardText}>{item.rastreamento}</Text>
+                      <Text style={styles.cardText}>{item.rastreio || item.rastreamento}</Text>
                     </View>
                   )}
                 </View>

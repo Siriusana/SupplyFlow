@@ -41,16 +41,27 @@ export function Negociacoes() {
   };
 
   const formatCurrency = (value: number) => {
+    if (!value || isNaN(value)) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
   const calcularEconomia = (valorInicial: number, valorNegociado: number) => {
+    if (!valorInicial || !valorNegociado || isNaN(valorInicial) || isNaN(valorNegociado)) {
+      return { economia: 0, percentual: '0' };
+    }
     const economia = valorInicial - valorNegociado;
-    const percentual = ((economia / valorInicial) * 100).toFixed(0);
+    const percentual = valorInicial > 0 ? ((economia / valorInicial) * 100).toFixed(0) : '0';
     return { economia, percentual };
   };
 
@@ -63,7 +74,10 @@ export function Negociacoes() {
   }
 
   const economiaTotal = negociacoes.reduce((acc, neg) => {
-    return acc + (neg.valorInicial - neg.valorNegociado);
+    const valorInicial = neg.valorInicial || 0;
+    const valorNegociado = neg.valorNegociado || 0;
+    if (isNaN(valorInicial) || isNaN(valorNegociado)) return acc;
+    return acc + (valorInicial - valorNegociado);
   }, 0);
 
   return (
@@ -145,7 +159,9 @@ export function Negociacoes() {
                   </View>
                   <View style={styles.cardRow}>
                     <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
-                    <Text style={styles.cardText}>{formatDate(item.data)}</Text>
+                    <Text style={styles.cardText}>
+                      {formatDate(item.dataInicio || item.dataFim || item.data || '')}
+                    </Text>
                   </View>
                 </View>
               </View>

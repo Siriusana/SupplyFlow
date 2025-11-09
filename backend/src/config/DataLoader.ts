@@ -296,6 +296,48 @@ async function loadNegociacoes() {
       valor: 2500.0,
     }),
   ]);
+
+  // Mais negociações
+  const neg4 = negociacaoRepository.create({
+    codigo: 'NEG-1004',
+    fornecedor: 'Equipamentos Industriais',
+    item: 'Equipamentos de Produção',
+    valorInicial: 150000.0,
+    valorNegociado: 135000.0,
+    desconto: '10%',
+    status: 'em_andamento',
+    responsavel: 'Carlos Mendes',
+    dataInicio: '2025-10-30',
+  });
+  await negociacaoRepository.save(neg4);
+
+  const neg5 = negociacaoRepository.create({
+    codigo: 'NEG-1005',
+    fornecedor: 'Materiais Premium',
+    item: 'Materiais de Construção',
+    valorInicial: 50000.0,
+    valorNegociado: 45000.0,
+    desconto: '10%',
+    status: 'concluida',
+    responsavel: 'Maria Santos',
+    dataInicio: '2025-10-20',
+    dataFim: '2025-10-25',
+  });
+  await negociacaoRepository.save(neg5);
+
+  const neg6 = negociacaoRepository.create({
+    codigo: 'NEG-1006',
+    fornecedor: 'TechSupply Ltda',
+    item: 'Servidores e Infraestrutura',
+    valorInicial: 200000.0,
+    valorNegociado: 180000.0,
+    desconto: '10%',
+    status: 'concluida',
+    responsavel: 'João Silva',
+    dataInicio: '2025-10-15',
+    dataFim: '2025-10-22',
+  });
+  await negociacaoRepository.save(neg6);
 }
 
 async function loadOrcamentos() {
@@ -375,6 +417,53 @@ async function loadOrcamentos() {
       condicoes: 'Pagamento mensal',
       status: 'recebida',
       avaliacao: 4.6,
+    }),
+  ]);
+
+  // Mais orçamentos
+  const orc3 = orcamentoRepository.create({
+    codigo: 'ORC-2003',
+    item: 'Equipamentos de Escritório',
+    requisicaoCodigo: 'REQ-1235',
+    quantidade: 50,
+    dataLimite: '2025-11-10',
+    status: 'pendente',
+  });
+  const savedOrc3 = await orcamentoRepository.save(orc3);
+
+  await cotacaoRepository.save([
+    cotacaoRepository.create({
+      orcamento: savedOrc3,
+      fornecedor: 'Materiais Premium',
+      valorUnitario: 50.0,
+      valorTotal: 2500.0,
+      prazoEntrega: '7 dias',
+      condicoes: 'À vista',
+      status: 'recebida',
+      avaliacao: 4.5,
+    }),
+  ]);
+
+  const orc4 = orcamentoRepository.create({
+    codigo: 'ORC-2004',
+    item: 'Licenças de Software',
+    requisicaoCodigo: 'REQ-1236',
+    quantidade: 50,
+    dataLimite: '2025-11-15',
+    status: 'aprovado',
+  });
+  const savedOrc4 = await orcamentoRepository.save(orc4);
+
+  await cotacaoRepository.save([
+    cotacaoRepository.create({
+      orcamento: savedOrc4,
+      fornecedor: 'TechSupply Ltda',
+      valorUnitario: 240.0,
+      valorTotal: 12000.0,
+      prazoEntrega: 'Imediato',
+      condicoes: 'Anual',
+      status: 'recebida',
+      avaliacao: 4.8,
     }),
   ]);
 }
@@ -460,6 +549,98 @@ async function loadPedidos() {
       descricao: 'Em rota de entrega',
     }),
   ]);
+
+  // Mais pedidos
+  const ped3 = pedidoRepository.create({
+    codigo: 'PED-5003',
+    requisicaoCodigo: 'REQ-1234',
+    fornecedor: 'TechSupply Ltda',
+    item: 'Notebooks Dell i7',
+    quantidade: 10,
+    valor: 45000.0,
+    dataPedido: '2025-10-28',
+    dataEntrega: '2025-11-20',
+    status: 'processando',
+    rastreio: 'BR111222333',
+    endereco: 'Rua das Flores, 123 - São Paulo, SP',
+  });
+  const savedPed3 = await pedidoRepository.save(ped3);
+
+  const ped4 = pedidoRepository.create({
+    codigo: 'PED-5004',
+    requisicaoCodigo: 'REQ-1237',
+    fornecedor: 'Serviços Gerais Pro',
+    item: 'Serviço de Limpeza',
+    quantidade: 1,
+    valor: 8500.0,
+    dataPedido: '2025-10-29',
+    dataEntrega: '2025-11-01',
+    status: 'entregue',
+    rastreio: 'BR444555666',
+    endereco: 'Av. Paulista, 1000 - São Paulo, SP',
+  });
+  const savedPed4 = await pedidoRepository.save(ped4);
+
+  const ped5 = pedidoRepository.create({
+    codigo: 'PED-5005',
+    requisicaoCodigo: 'REQ-1235',
+    fornecedor: 'Materiais Premium',
+    item: 'Materiais de Escritório',
+    quantidade: 1,
+    valor: 2500.0,
+    dataPedido: '2025-11-01',
+    dataEntrega: '2025-11-15',
+    status: 'em_transito',
+    rastreio: 'BR777888999',
+    endereco: 'Rua das Flores, 123 - São Paulo, SP',
+  });
+  await pedidoRepository.save(ped5);
+
+  // Pedidos do mês atual (janeiro 2025)
+  const ped6 = pedidoRepository.create({
+    codigo: 'PED-5006',
+    requisicaoCodigo: 'REQ-1234',
+    fornecedor: 'TechSupply Ltda',
+    item: 'Equipamentos de TI',
+    quantidade: 5,
+    valor: 15000.0,
+    dataPedido: new Date().toISOString().split('T')[0], // Data atual
+    dataEntrega: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'processando',
+    rastreio: 'BR999888777',
+    endereco: 'Rua das Flores, 123 - São Paulo, SP',
+  });
+  await pedidoRepository.save(ped6);
+
+  const ped7 = pedidoRepository.create({
+    codigo: 'PED-5007',
+    requisicaoCodigo: 'REQ-1235',
+    fornecedor: 'Materiais Premium',
+    item: 'Material de Escritório',
+    quantidade: 100,
+    valor: 5000.0,
+    dataPedido: new Date().toISOString().split('T')[0], // Data atual
+    dataEntrega: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'entregue',
+    rastreio: 'BR666555444',
+    endereco: 'Av. Paulista, 1000 - São Paulo, SP',
+  });
+  await pedidoRepository.save(ped7);
+
+  const ped8 = pedidoRepository.create({
+    codigo: 'PED-5008',
+    requisicaoCodigo: 'REQ-1237',
+    fornecedor: 'Serviços Gerais Pro',
+    item: 'Serviço de Limpeza Mensal',
+    quantidade: 1,
+    valor: 3000.0,
+    dataPedido: new Date().toISOString().split('T')[0], // Data atual
+    dataEntrega: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'em_transito',
+    rastreio: 'BR333222111',
+    endereco: 'Rua das Flores, 123 - São Paulo, SP',
+  });
+  await pedidoRepository.save(ped8);
 }
 
 async function loadDashboardData() {
@@ -505,7 +686,7 @@ async function loadDashboardData() {
     }),
   ]);
 
-  // Monthly Expenses
+  // Monthly Expenses - 2025
   await monthlyExpenseRepository.save([
     { name: 'Jan', valor: 120000.0, meta: 150000.0 },
     { name: 'Fev', valor: 150000.0, meta: 150000.0 },
@@ -517,6 +698,8 @@ async function loadDashboardData() {
     { name: 'Ago', valor: 190000.0, meta: 200000.0 },
     { name: 'Set', valor: 230000.0, meta: 200000.0 },
     { name: 'Out', valor: 250000.0, meta: 220000.0 },
+    { name: 'Nov', valor: 230000.0, meta: 220000.0 },
+    { name: 'Dez', valor: 260000.0, meta: 240000.0 },
   ].map((e) => monthlyExpenseRepository.create(e)));
 
   // Category Expenses

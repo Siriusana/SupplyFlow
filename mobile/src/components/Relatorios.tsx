@@ -6,7 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,9 +14,12 @@ import { BarChart, LineChart } from 'react-native-chart-kit';
 import { relatoriosAPI } from '../services/api';
 import { colors, spacing, borderRadius, typography } from '../styles/theme';
 
-const screenWidth = Dimensions.get('window').width;
-
 export function Relatorios() {
+  const { width: screenWidth } = useWindowDimensions();
+  const isSmallScreen = screenWidth < 360;
+  const chartWidth = screenWidth - (isSmallScreen ? spacing.md * 2 : spacing.xl * 2) - spacing.lg * 2;
+  const chartHeight = isSmallScreen ? 180 : 220;
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [gastosMensais, setGastosMensais] = useState<any>(null);
@@ -77,19 +80,21 @@ export function Relatorios() {
   };
 
   const chartConfig = {
-    backgroundColor: colors.card.background,
-    backgroundGradientFrom: colors.card.background,
-    backgroundGradientTo: colors.card.background,
+    backgroundColor: '#1e293b',
+    backgroundGradientFrom: '#1e293b',
+    backgroundGradientTo: '#1e293b',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.6})`,
+    color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`, // Purple
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, // White labels
     style: {
       borderRadius: borderRadius.md,
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
-      stroke: 'rgba(255, 255, 255, 0.2)',
+      stroke: 'rgba(255, 255, 255, 0.1)',
     },
+    fillShadowGradient: colors.purple[500],
+    fillShadowGradientOpacity: 0.3,
   };
 
   if (loading) {
@@ -137,53 +142,100 @@ export function Relatorios() {
           </View>
         </View>
 
-        {gastosMensais && (
+        {gastosMensais ? (
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Gastos Mensais</Text>
-            <LineChart
-              data={gastosMensais}
-              width={screenWidth - spacing.xl * 2}
-              height={220}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-            />
+            <View style={styles.chartContainer}>
+              <LineChart
+                data={gastosMensais}
+                width={chartWidth}
+                height={chartHeight}
+                chartConfig={chartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLabels={!isSmallScreen}
+                withHorizontalLabels={true}
+                segments={isSmallScreen ? 3 : 4}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Gastos Mensais</Text>
+            <View style={styles.emptyChartContainer}>
+              <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+            </View>
           </View>
         )}
 
-        {gastosPorCategoria && (
+        {gastosPorCategoria ? (
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Gastos por Categoria</Text>
-            <BarChart
-              data={gastosPorCategoria}
-              width={screenWidth - spacing.xl * 2}
-              height={220}
-              chartConfig={chartConfig}
-              style={styles.chart}
-              yAxisLabel="R$ "
-            />
+            <View style={styles.chartContainer}>
+              <BarChart
+                data={gastosPorCategoria}
+                width={chartWidth}
+                height={chartHeight}
+                chartConfig={chartConfig}
+                style={styles.chart}
+                yAxisLabel="R$ "
+                showValuesOnTopOfBars={!isSmallScreen}
+                withInnerLines={true}
+                withHorizontalLabels={true}
+                fromZero={true}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Gastos por Categoria</Text>
+            <View style={styles.emptyChartContainer}>
+              <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+            </View>
           </View>
         )}
 
-        {topFornecedores.length > 0 && (
+        {topFornecedores && topFornecedores.length > 0 ? (
           <View style={styles.listCard}>
             <Text style={styles.chartTitle}>Top Fornecedores</Text>
-            {topFornecedores.map((fornecedor, index) => (
+            {topFornecedores.map((fornecedor: any, index: number) => (
               <View key={index} style={styles.listItem}>
                 <View style={styles.listItemLeft}>
                   <View style={styles.rankBadge}>
                     <Text style={styles.rankText}>{index + 1}</Text>
                   </View>
                   <View>
-                    <Text style={styles.listItemTitle}>{fornecedor.nome}</Text>
-                    <Text style={styles.listItemSubtitle}>{fornecedor.categoria}</Text>
+                    <Text style={styles.listItemTitle}>{fornecedor.nome || 'N/A'}</Text>
+                    <Text style={styles.listItemSubtitle}>
+                      {fornecedor.categoria || 'Sem categoria'} • {fornecedor.pedidos || 0} pedidos
+                    </Text>
                   </View>
                 </View>
-                <Text style={styles.listItemValue}>
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.total)}
-                </Text>
+                <View style={styles.listItemRight}>
+                  <Text style={styles.listItemValue}>
+                    {typeof fornecedor.total === 'string' 
+                      ? fornecedor.total 
+                      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.total || 0)}
+                  </Text>
+                  {fornecedor.economia && (
+                    <Text style={styles.listItemEconomia}>
+                      Economia: {typeof fornecedor.economia === 'string' 
+                        ? fornecedor.economia 
+                        : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.economia || 0)}
+                    </Text>
+                  )}
+                </View>
               </View>
             ))}
+          </View>
+        ) : (
+          <View style={styles.listCard}>
+            <Text style={styles.chartTitle}>Top Fornecedores</Text>
+            <View style={styles.emptyChartContainer}>
+              <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -205,6 +257,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   header: {
     marginBottom: spacing.lg,
@@ -228,11 +281,12 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '47%',
+    maxWidth: '48%',
     backgroundColor: colors.card.background,
     borderWidth: 1,
     borderColor: colors.card.border,
     borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    padding: spacing.md,
     marginBottom: spacing.md,
     alignItems: 'center',
   },
@@ -261,8 +315,28 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.md,
   },
+  chartContainer: {
+    backgroundColor: '#1e293b',
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
+  },
   chart: {
     borderRadius: borderRadius.md,
+    marginVertical: 0,
+  },
+  emptyChartContainer: {
+    minHeight: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    padding: spacing.lg,
+  },
+  emptyChartText: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.base,
   },
   listCard: {
     backgroundColor: colors.card.background,
@@ -309,10 +383,19 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.text.tertiary,
   },
+  listItemRight: {
+    alignItems: 'flex-end',
+  },
   listItemValue: {
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.semibold,
     color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  listItemEconomia: {
+    fontSize: typography.sizes.sm,
+    color: colors.green[400],
+    fontWeight: typography.weights.medium,
   },
 });
 

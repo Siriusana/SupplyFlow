@@ -109,7 +109,10 @@ export const pedidosAPI = {
 };
 
 export const relatoriosAPI = {
-  getAll: () => api.get('/relatorios/all'),
+  getAll: (params?: { year?: string }) => {
+    const queryParams = params?.year ? `?year=${params.year}` : '';
+    return api.get(`/relatorios/all${queryParams}`);
+  },
   getGastosMensais: () => api.get('/relatorios/gastos-mensais'),
   getGastosPorCategoria: () => api.get('/relatorios/gastos-categoria'),
   getIndicadores: () => api.get('/relatorios/indicadores'),

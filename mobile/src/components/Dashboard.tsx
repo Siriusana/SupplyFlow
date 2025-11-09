@@ -6,7 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,9 +14,10 @@ import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { dashboardAPI } from '../services/api';
 import { colors, spacing, borderRadius, typography } from '../styles/theme';
 
-const screenWidth = Dimensions.get('window').width;
-
 export function Dashboard() {
+  const { width: screenWidth } = useWindowDimensions();
+  const isSmallScreen = screenWidth < 360;
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<any[]>([]);
@@ -24,6 +25,9 @@ export function Dashboard() {
   const [barChartData, setBarChartData] = useState<any>(null);
   const [pieChartData, setPieChartData] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  
+  const chartWidth = screenWidth - (isSmallScreen ? spacing.md * 2 : spacing.xl * 2) - spacing.lg * 2;
+  const chartHeight = isSmallScreen ? 180 : 220;
 
   const pieColors = ['#10b981', '#f59e0b', '#ef4444'];
 
@@ -112,12 +116,12 @@ export function Dashboard() {
   };
 
   const chartConfig = {
-    backgroundColor: colors.card.background,
-    backgroundGradientFrom: colors.card.background,
-    backgroundGradientTo: colors.card.background,
+    backgroundColor: '#1e293b',
+    backgroundGradientFrom: '#1e293b',
+    backgroundGradientTo: '#1e293b',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.6})`,
+    color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`, // Purple
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, // White labels
     style: {
       borderRadius: borderRadius.md,
     },
@@ -125,11 +129,14 @@ export function Dashboard() {
       r: '6',
       strokeWidth: '2',
       stroke: colors.purple[500],
+      fill: colors.purple[500],
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
-      stroke: 'rgba(255, 255, 255, 0.2)',
+      stroke: 'rgba(255, 255, 255, 0.1)',
     },
+    fillShadowGradient: colors.purple[500],
+    fillShadowGradientOpacity: 0.3,
   };
 
   if (loading) {
@@ -149,14 +156,20 @@ export function Dashboard() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>Dashboard</Text>
             <Text style={styles.headerSubtitle}>Visão geral da gestão de compras</Text>
           </View>
-          <View style={styles.lastUpdate}>
+          <View style={[styles.lastUpdate, isSmallScreen && styles.lastUpdateSmall]}>
             <Text style={styles.lastUpdateLabel}>Última atualização</Text>
-            <Text style={styles.lastUpdateValue}>
-              {new Date().toLocaleString('pt-BR')}
+            <Text style={[styles.lastUpdateValue, isSmallScreen && styles.lastUpdateValueSmall]} numberOfLines={1}>
+              {new Date().toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </Text>
           </View>
         </View>
@@ -208,56 +221,93 @@ export function Dashboard() {
         {/* Charts Section */}
         <View style={styles.chartsSection}>
           {/* Line Chart */}
-          {lineChartData && (
+          {lineChartData ? (
             <View style={styles.chartCard}>
               <Text style={styles.chartTitle}>Evolução de Gastos (6 meses)</Text>
-              <LineChart
-                data={lineChartData}
-                width={screenWidth - spacing.xl * 2}
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.chart}
-                withInnerLines={true}
-                withOuterLines={true}
-                withVerticalLabels={true}
-                withHorizontalLabels={true}
-              />
+              <View style={styles.chartContainer}>
+                <LineChart
+                  data={lineChartData}
+                  width={chartWidth}
+                  height={chartHeight}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                  withInnerLines={true}
+                  withOuterLines={true}
+                  withVerticalLabels={!isSmallScreen}
+                  withHorizontalLabels={true}
+                  segments={isSmallScreen ? 3 : 4}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>Evolução de Gastos (6 meses)</Text>
+              <View style={styles.emptyChartContainer}>
+                <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+              </View>
             </View>
           )}
 
           {/* Bar Chart */}
-          {barChartData && (
+          {barChartData ? (
             <View style={styles.chartCard}>
               <Text style={styles.chartTitle}>Gastos por Categoria</Text>
-              <BarChart
-                data={barChartData}
-                width={screenWidth - spacing.xl * 2}
-                height={220}
-                chartConfig={chartConfig}
-                style={styles.chart}
-                yAxisLabel="R$ "
-                showValuesOnTopOfBars
-                withInnerLines={true}
-                withHorizontalLabels={true}
-              />
+              <View style={styles.chartContainer}>
+                <BarChart
+                  data={barChartData}
+                  width={chartWidth}
+                  height={chartHeight}
+                  chartConfig={chartConfig}
+                  style={styles.chart}
+                  yAxisLabel="R$ "
+                  showValuesOnTopOfBars={!isSmallScreen}
+                  withInnerLines={true}
+                  withHorizontalLabels={true}
+                  fromZero={true}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>Gastos por Categoria</Text>
+              <View style={styles.emptyChartContainer}>
+                <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+              </View>
             </View>
           )}
 
           {/* Pie Chart */}
-          {pieChartData && pieChartData.length > 0 && (
+          {pieChartData && pieChartData.length > 0 ? (
             <View style={styles.chartCard}>
               <Text style={styles.chartTitle}>Status das Requisições</Text>
-              <PieChart
-                data={pieChartData}
-                width={screenWidth - spacing.xl * 2}
-                height={220}
-                chartConfig={chartConfig}
-                accessor="value"
-                backgroundColor="transparent"
-                paddingLeft="15"
-                style={styles.chart}
-              />
+              <View style={styles.chartContainer}>
+                <PieChart
+                  data={pieChartData}
+                  width={chartWidth}
+                  height={chartHeight}
+                  chartConfig={chartConfig}
+                  accessor="value"
+                  backgroundColor="transparent"
+                  paddingLeft={isSmallScreen ? "10" : "15"}
+                  style={styles.chart}
+                />
+              </View>
+              <View style={styles.pieLegend}>
+                {pieChartData.map((item: any, index: number) => (
+                  <View key={index} style={styles.pieLegendItem}>
+                    <View style={[styles.pieLegendDot, { backgroundColor: item.color }]} />
+                    <Text style={styles.pieLegendText}>{item.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>Status das Requisições</Text>
+              <View style={styles.emptyChartContainer}>
+                <Text style={styles.emptyChartText}>Nenhum dado disponível</Text>
+              </View>
             </View>
           )}
 
@@ -309,12 +359,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     fontSize: typography.sizes['3xl'],
@@ -333,15 +389,26 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     alignItems: 'flex-end',
+    minWidth: 120,
+    maxWidth: 180,
+  },
+  lastUpdateSmall: {
+    minWidth: 100,
+    maxWidth: 140,
+    padding: spacing.sm,
   },
   lastUpdateLabel: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.xs,
     color: colors.text.tertiary,
     marginBottom: spacing.xs,
   },
   lastUpdateValue: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.xs,
     color: colors.text.primary,
+    textAlign: 'right',
+  },
+  lastUpdateValueSmall: {
+    fontSize: 10,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -352,11 +419,12 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '47%',
+    maxWidth: '48%',
     backgroundColor: colors.card.background,
     borderWidth: 1,
     borderColor: colors.card.border,
     borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    padding: spacing.md,
     marginBottom: spacing.md,
   },
   statHeader: {
@@ -408,8 +476,49 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.md,
   },
+  chartContainer: {
+    backgroundColor: '#1e293b',
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
+  },
   chart: {
     borderRadius: borderRadius.md,
+    marginVertical: 0,
+  },
+  emptyChartContainer: {
+    minHeight: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    padding: spacing.lg,
+  },
+  emptyChartText: {
+    color: colors.text.tertiary,
+    fontSize: typography.sizes.base,
+  },
+  pieLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  pieLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  pieLegendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  pieLegendText: {
+    color: colors.text.secondary,
+    fontSize: typography.sizes.sm,
   },
   activityCard: {
     backgroundColor: colors.card.background,

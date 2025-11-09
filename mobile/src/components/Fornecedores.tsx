@@ -27,6 +27,8 @@ export function Fornecedores() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedFornecedor, setSelectedFornecedor] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentFornecedor, setCurrentFornecedor] = useState<any>(null);
   const [filterCategoria, setFilterCategoria] = useState('');
@@ -246,7 +248,14 @@ export function Fornecedores() {
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => {
+                setSelectedFornecedor(item);
+                setShowDetailModal(true);
+              }}
+              activeOpacity={0.7}
+            >
               <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderLeft}>
                   <View style={styles.avatar}>
@@ -299,7 +308,7 @@ export function Fornecedores() {
                   )}
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         />
 
@@ -401,6 +410,116 @@ export function Fornecedores() {
                   <Text style={styles.modalButtonTextSave}>Salvar</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Detail Modal */}
+        <Modal
+          visible={showDetailModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowDetailModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {selectedFornecedor && (
+                <>
+                  <View style={styles.detailHeader}>
+                    <View style={styles.detailAvatar}>
+                      <Text style={styles.detailAvatarText}>
+                        {selectedFornecedor.nome?.charAt(0).toUpperCase() || 'F'}
+                      </Text>
+                    </View>
+                    <View style={styles.detailHeaderInfo}>
+                      <Text style={styles.detailTitle}>{selectedFornecedor.nome}</Text>
+                      <Text style={styles.detailSubtitle}>{selectedFornecedor.categoria}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setShowDetailModal(false)}
+                      style={styles.closeButton}
+                    >
+                      <Ionicons name="close" size={24} color={colors.text.primary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView style={styles.detailContent}>
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>Informações de Contato</Text>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
+                        <Text style={styles.detailText}>{selectedFornecedor.email || 'N/A'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="call-outline" size={20} color={colors.text.tertiary} />
+                        <Text style={styles.detailText}>{selectedFornecedor.telefone || 'N/A'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="location-outline" size={20} color={colors.text.tertiary} />
+                        <Text style={styles.detailText}>{selectedFornecedor.endereco || 'N/A'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="document-text-outline" size={20} color={colors.text.tertiary} />
+                        <Text style={styles.detailText}>{selectedFornecedor.cnpj || 'N/A'}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>Estatísticas</Text>
+                      <View style={styles.detailStats}>
+                        <View style={styles.detailStatItem}>
+                          <Ionicons name="star" size={24} color={colors.yellow[400]} />
+                          <Text style={styles.detailStatLabel}>Avaliação</Text>
+                          <Text style={styles.detailStatValue}>
+                            {selectedFornecedor.avaliacao?.toFixed(1) || '0.0'}
+                          </Text>
+                        </View>
+                        <View style={styles.detailStatItem}>
+                          <Ionicons name="cart-outline" size={24} color={colors.blue[400]} />
+                          <Text style={styles.detailStatLabel}>Total Pedidos</Text>
+                          <Text style={styles.detailStatValue}>
+                            {selectedFornecedor.totalPedidos || 0}
+                          </Text>
+                        </View>
+                        <View style={styles.detailStatItem}>
+                          <Ionicons
+                            name={selectedFornecedor.status === 'Ativo' ? 'checkmark-circle' : 'close-circle'}
+                            size={24}
+                            color={selectedFornecedor.status === 'Ativo' ? colors.green[400] : colors.red[400]}
+                          />
+                          <Text style={styles.detailStatLabel}>Status</Text>
+                          <Text style={styles.detailStatValue}>{selectedFornecedor.status || 'N/A'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </ScrollView>
+
+                  <View style={styles.detailActions}>
+                    <TouchableOpacity
+                      style={[styles.detailActionButton, styles.editButton]}
+                      onPress={() => {
+                        setShowDetailModal(false);
+                        handleEdit(selectedFornecedor);
+                      }}
+                    >
+                      <Ionicons name="create-outline" size={20} color="#fff" />
+                      <Text style={styles.detailActionButtonText}>Editar</Text>
+                    </TouchableOpacity>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={[styles.detailActionButton, styles.deleteButton]}
+                        onPress={() => {
+                          setShowDetailModal(false);
+                          handleDelete(selectedFornecedor.id);
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#fff" />
+                        <Text style={styles.detailActionButtonText}>Excluir</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </Modal>
@@ -647,6 +766,114 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
   },
   modalButtonTextSave: {
+    color: colors.text.primary,
+    fontSize: typography.sizes.base,
+    fontWeight: typography.weights.semibold,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.card.border,
+  },
+  detailAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.purple[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  detailAvatarText: {
+    color: colors.text.primary,
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold,
+  },
+  detailHeaderInfo: {
+    flex: 1,
+  },
+  detailTitle: {
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  detailSubtitle: {
+    fontSize: typography.sizes.base,
+    color: colors.text.tertiary,
+  },
+  closeButton: {
+    padding: spacing.sm,
+  },
+  detailContent: {
+    maxHeight: 400,
+  },
+  detailSection: {
+    marginBottom: spacing.lg,
+  },
+  detailSectionTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  detailText: {
+    fontSize: typography.sizes.base,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  detailStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: spacing.md,
+  },
+  detailStatItem: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  detailStatLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.text.tertiary,
+  },
+  detailStatValue: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold,
+    color: colors.text.primary,
+  },
+  detailActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.card.border,
+  },
+  detailActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+  },
+  editButton: {
+    backgroundColor: colors.blue[500],
+  },
+  deleteButton: {
+    backgroundColor: colors.red[500],
+  },
+  detailActionButtonText: {
     color: colors.text.primary,
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.semibold,

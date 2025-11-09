@@ -41,11 +41,19 @@ export function Orcamentos() {
   };
 
   const formatCurrency = (value: number) => {
+    if (!value || isNaN(value)) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Data inválida';
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
   if (loading) {
@@ -122,7 +130,13 @@ export function Orcamentos() {
                 <View style={styles.cardBody}>
                   <View style={styles.cardRow}>
                     <Text style={styles.cardLabel}>Valor Total:</Text>
-                    <Text style={styles.cardValue}>{formatCurrency(item.valorTotal)}</Text>
+                    <Text style={styles.cardValue}>
+                      {formatCurrency(
+                        item.valorTotal ||
+                        item.cotacoes?.reduce((acc: number, c: any) => acc + (c.valorTotal || 0), 0) ||
+                        0
+                      )}
+                    </Text>
                   </View>
                   <View style={styles.cardRow}>
                     <Text style={styles.cardLabel}>Cotações:</Text>
@@ -130,7 +144,9 @@ export function Orcamentos() {
                   </View>
                   <View style={styles.cardRow}>
                     <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
-                    <Text style={styles.cardText}>{formatDate(item.data)}</Text>
+                    <Text style={styles.cardText}>
+                      {formatDate(item.dataLimite || item.data || '')}
+                    </Text>
                   </View>
                 </View>
               </View>

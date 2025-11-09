@@ -21,16 +21,25 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.purple[400],
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
-          backgroundColor: colors.card.background,
-          borderTopColor: colors.card.border,
+          backgroundColor: '#1e293b',
+          borderTopColor: 'rgba(255, 255, 255, 0.1)',
           borderTopWidth: 1,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       }}
     >

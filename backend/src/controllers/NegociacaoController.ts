@@ -73,12 +73,44 @@ export class NegociacaoController {
 
   async create(req: AuthRequest, res: Response) {
     try {
+      const { codigo, item, fornecedor, valorInicial, valorNegociado, responsavel, dataInicio, status } = req.body;
+      
+      if (!codigo || !item || !fornecedor || !valorInicial || !valorNegociado) {
+        return res.status(400).json({ message: 'Campos obrigatórios: codigo, item, fornecedor, valorInicial, valorNegociado' });
+      }
+
       const negociacaoRepository = AppDataSource.getRepository(Negociacao);
-      const negociacao = negociacaoRepository.create(req.body);
+      
+      // Verificar se já existe negociação com mesmo código
+      const existing = await negociacaoRepository.findOne({ where: { codigo } });
+      if (existing) {
+        return res.status(400).json({ message: 'Já existe uma negociação com este código' });
+      }
+
+      const economia = parseFloat(valorInicial) - parseFloat(valorNegociado);
+      const percentualDesconto = parseFloat(valorInicial) > 0 
+        ? ((economia / parseFloat(valorInicial)) * 100).toFixed(0) 
+        : '0';
+
+      const negociacao = negociacaoRepository.create({
+        codigo,
+        item,
+        fornecedor,
+        valorInicial: parseFloat(valorInicial),
+        valorNegociado: parseFloat(valorNegociado),
+        desconto: `${percentualDesconto}%`,
+        responsavel: responsavel || req.user?.username || 'Usuário',
+        dataInicio: dataInicio || new Date().toISOString().split('T')[0],
+        status: status || 'em_andamento',
+      });
+      
       await negociacaoRepository.save(negociacao);
       res.status(201).json(negociacao);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating negociacao:', error);
+      if (error.code === 'SQLITE_CONSTRAINT' || error.code === '23505') {
+        return res.status(400).json({ message: 'Erro de validação: código já existe' });
+      }
       res.status(500).json({ message: 'Erro ao criar negociação' });
     }
   }

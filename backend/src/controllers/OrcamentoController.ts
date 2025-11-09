@@ -73,12 +73,36 @@ export class OrcamentoController {
 
   async create(req: AuthRequest, res: Response) {
     try {
+      const { codigo, item, requisicaoCodigo, quantidade, dataLimite, status } = req.body;
+      
+      if (!codigo || !item) {
+        return res.status(400).json({ message: 'Campos obrigatórios: codigo, item' });
+      }
+
       const orcamentoRepository = AppDataSource.getRepository(Orcamento);
-      const orcamento = orcamentoRepository.create(req.body);
+      
+      // Verificar se já existe orçamento com mesmo código
+      const existing = await orcamentoRepository.findOne({ where: { codigo } });
+      if (existing) {
+        return res.status(400).json({ message: 'Já existe um orçamento com este código' });
+      }
+
+      const orcamento = orcamentoRepository.create({
+        codigo,
+        item,
+        requisicaoCodigo: requisicaoCodigo || '',
+        quantidade: quantidade || 1,
+        dataLimite: dataLimite || new Date().toISOString().split('T')[0],
+        status: status || 'pendente',
+      });
+      
       await orcamentoRepository.save(orcamento);
       res.status(201).json(orcamento);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating orcamento:', error);
+      if (error.code === 'SQLITE_CONSTRAINT' || error.code === '23505') {
+        return res.status(400).json({ message: 'Erro de validação: código já existe' });
+      }
       res.status(500).json({ message: 'Erro ao criar orçamento' });
     }
   }
