@@ -1,0 +1,466 @@
+import { useState, useEffect } from 'react';
+import { BarChart3, Download, TrendingUp, TrendingDown, DollarSign, Package, Users, ShoppingCart, Loader2 } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { relatoriosAPI } from '../services/api';
+import toast from 'react-hot-toast';
+import { exportRelatoriosToExcel, exportRelatoriosToPDF } from '../utils/exportUtils';
+
+export function Relatorios() {
+  const [loading, setLoading] = useState(true);
+  const [gastosMensais, setGastosMensais] = useState<any[]>([]);
+  const [gastosMensaisAll, setGastosMensaisAll] = useState<any[]>([]);
+  const [gastosPorCategoria, setGastosPorCategoria] = useState<any[]>([]);
+  const [indicadores, setIndicadores] = useState<any>({});
+  const [topFornecedores, setTopFornecedores] = useState<any[]>([]);
+  const [distribuicaoFornecedores, setDistribuicaoFornecedores] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+  const loadRelatorios = async (year?: string) => {
+    try {
+      setLoading(true);
+      const response = await relatoriosAPI.getAll(year ? { year } : undefined);
+      const data = response.data;
+
+      // Gastos mensais
+      if (data.gastosMensais) {
+        const gastos = data.gastosMensais.map((g: any) => ({
+          mes: g.name,
+          valor: g.valor,
+          meta: g.meta || null,
+        }));
+        setGastosMensaisAll(gastos);
+        setGastosMensais(gastos);
+      }
+
+      // Gastos por categoria
+      if (data.gastosPorCategoria) {
+        setGastosPorCategoria(data.gastosPorCategoria.map((g: any) => ({
+          categoria: g.name,
+          valor: g.valor,
+        })));
+      }
+
+      // Indicadores
+      if (data.indicadores) {
+        setIndicadores(data.indicadores);
+      }
+
+      // Top fornecedores
+      if (data.topFornecedores) {
+        setTopFornecedores(data.topFornecedores);
+      }
+
+      // Distribuição de fornecedores
+      if (data.distribuicaoFornecedores) {
+        setDistribuicaoFornecedores(data.distribuicaoFornecedores);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar relatórios:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pieColors = ['#8b5cf6', '#3b82f6'];
+
+  // Carregar dados inicialmente e quando o ano mudar
+  useEffect(() => {
+    loadRelatorios(selectedYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear]);
+
+  const indicadoresList = [
+    {
+      titulo: 'Economia Total',
+      valor: indicadores.economiaTotalValor || 'R$ 0',
+      percentual: indicadores.economiaTotalPercentual || '0%',
+      trend: 'up',
+      icon: DollarSign,
+      color: 'from-green-500 to-emerald-500',
+    },
+    {
+      titulo: 'Gastos do Mês',
+      valor: indicadores.gastosDoMesValor || 'R$ 0',
+      percentual: indicadores.gastosDoMesPercentual || '0%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: 'from-blue-500 to-cyan-500',
+    },
+    {
+      titulo: 'Total de Pedidos',
+      valor: indicadores.totalPedidos || 0,
+      percentual: indicadores.totalPedidosPercentual || '0%',
+      trend: 'up',
+      icon: Package,
+      color: 'from-purple-500 to-pink-500',
+    },
+    {
+      titulo: 'Fornecedores Ativos',
+      valor: indicadores.fornecedoresAtivos || 0,
+      percentual: indicadores.fornecedoresAtivosPercentual || '0%',
+      trend: parseFloat(indicadores.fornecedoresAtivosPercentual?.replace('%', '') || '0') >= 0 ? 'up' : 'down',
+      icon: Users,
+      color: 'from-orange-500 to-red-500',
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl text-white mb-2">Relatórios & Indicadores</h1>
+          <p className="text-white/60">Suporte à decisão estratégica</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                const hasData = (gastosMensais && gastosMensais.length > 0) ||
+                  (gastosPorCategoria && gastosPorCategoria.length > 0) ||
+                  indicadores ||
+                  (topFornecedores && topFornecedores.length > 0);
+                
+                if (!hasData) {
+                  toast.error('Nenhum dado de relatório para exportar');
+                  return;
+                }
+                
+                exportRelatoriosToPDF({
+                  gastosMensais,
+                  gastosPorCategoria,
+                  indicadores,
+                  topFornecedores,
+                });
+                toast.success('Exportado para PDF com sucesso!');
+              } catch (error: any) {
+                console.error('Erro ao exportar para PDF:', error);
+                toast.error(error?.message || 'Erro ao exportar para PDF');
+              }
+            }}
+            disabled={(!gastosMensais || gastosMensais.length === 0) &&
+              (!gastosPorCategoria || gastosPorCategoria.length === 0) &&
+              !indicadores &&
+              (!topFornecedores || topFornecedores.length === 0)}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-5 h-5" />
+            Exportar PDF
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                const hasData = (gastosMensais && gastosMensais.length > 0) ||
+                  (gastosPorCategoria && gastosPorCategoria.length > 0) ||
+                  indicadores ||
+                  (topFornecedores && topFornecedores.length > 0);
+                
+                if (!hasData) {
+                  toast.error('Nenhum dado de relatório para exportar');
+                  return;
+                }
+                
+                exportRelatoriosToExcel({
+                  gastosMensais,
+                  gastosPorCategoria,
+                  indicadores,
+                  topFornecedores,
+                });
+                toast.success('Exportado para Excel com sucesso!');
+              } catch (error: any) {
+                console.error('Erro ao exportar para Excel:', error);
+                toast.error(error?.message || 'Erro ao exportar para Excel');
+              }
+            }}
+            disabled={(!gastosMensais || gastosMensais.length === 0) &&
+              (!gastosPorCategoria || gastosPorCategoria.length === 0) &&
+              !indicadores &&
+              (!topFornecedores || topFornecedores.length === 0)}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-5 h-5" />
+            Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-4 gap-6">
+        {indicadoresList.map((ind, index) => {
+          const Icon = ind.icon;
+          const TrendIcon = ind.trend === 'up' ? TrendingUp : TrendingDown;
+
+          return (
+            <div
+              key={index}
+              className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${ind.color} flex items-center justify-center`}
+                >
+                  <Icon className="w-6 h-6 text-white" />
+                </div>
+                <div
+                  className={`flex items-center gap-1 ${
+                    ind.trend === 'up' ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  <TrendIcon className="w-4 h-4" />
+                  <span className="text-sm">{ind.percentual}</span>
+                </div>
+              </div>
+              <p className="text-white/60 text-sm mb-1">{ind.titulo}</p>
+              <p className="text-white text-2xl">{ind.valor}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Gastos Mensais */}
+        <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-white">Gastos Mensais vs Meta</h3>
+            <select 
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none cursor-pointer"
+            >
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+          </div>
+          {gastosMensais.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={gastosMensais}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                <XAxis dataKey="mes" stroke="#ffffff60" />
+                <YAxis stroke="#ffffff60" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #ffffff20',
+                    borderRadius: '12px',
+                    color: '#fff',
+                  }}
+                  itemStyle={{
+                    color: '#fff',
+                  }}
+                  labelStyle={{
+                    color: '#fff',
+                  }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="valor"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  name="Gasto Real"
+                />
+                {gastosMensais[0]?.meta && (
+                  <Line
+                    type="monotone"
+                    dataKey="meta"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    name="Meta"
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-white/60">
+              Nenhum dado disponível
+            </div>
+          )}
+        </div>
+
+        {/* Gastos por Categoria */}
+        <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+          <h3 className="text-white mb-6">Gastos por Categoria (Anual)</h3>
+          {gastosPorCategoria.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={gastosPorCategoria}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                <XAxis dataKey="categoria" stroke="#ffffff60" />
+                <YAxis stroke="#ffffff60" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #ffffff20',
+                    borderRadius: '12px',
+                    color: '#fff',
+                  }}
+                  itemStyle={{
+                    color: '#fff',
+                  }}
+                  labelStyle={{
+                    color: '#fff',
+                  }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+                />
+                <Bar dataKey="valor" fill="url(#barGradient2)" radius={[8, 8, 0, 0]} />
+                <defs>
+                  <linearGradient id="barGradient2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-white/60">
+              Nenhum dado disponível
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* Distribuição Fornecedores */}
+        <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+          <h3 className="text-white mb-4">Concentração de Fornecedores</h3>
+          {distribuicaoFornecedores && distribuicaoFornecedores.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={distribuicaoFornecedores}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {distribuicaoFornecedores.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={pieColors[index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #ffffff20',
+                      borderRadius: '12px',
+                      color: '#fff',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex justify-center gap-4 mt-4">
+                {distribuicaoFornecedores.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: pieColors[index] }}
+                    />
+                    <span className="text-white/60 text-sm">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-white/60">
+              Nenhum dado disponível
+            </div>
+          )}
+        </div>
+
+        {/* Top Fornecedores */}
+        <div className="col-span-2 p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+          <h3 className="text-white mb-4">Top 5 Fornecedores</h3>
+          {topFornecedores && topFornecedores.length > 0 ? (
+            <div className="space-y-3">
+              {topFornecedores.map((fornecedor: any, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white">{fornecedor.nome || 'N/A'}</p>
+                    <p className="text-white/60 text-sm">
+                      {fornecedor.categoria || 'Sem categoria'} • {fornecedor.pedidos || 0} pedidos
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white">
+                      {typeof fornecedor.total === 'string' 
+                        ? fornecedor.total 
+                        : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.total || 0)}
+                    </p>
+                    {fornecedor.economia && (
+                      <p className="text-green-400 text-sm">
+                        Economia: {typeof fornecedor.economia === 'string' 
+                          ? fornecedor.economia 
+                          : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fornecedor.economia || 0)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-white/60 py-8">
+              Nenhum dado disponível
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Resumo Executivo */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl border border-purple-500/30">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-white mb-3">Resumo Executivo - {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h3>
+            <div className="grid grid-cols-3 gap-6">
+              <div>
+                <p className="text-white/60 text-sm mb-1">Total Gasto no Período</p>
+                <p className="text-white text-xl">
+                  {gastosMensais.reduce((acc, g) => acc + (g.valor || 0), 0).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </p>
+              </div>
+              <div>
+                <p className="text-white/60 text-sm mb-1">Economia Obtida</p>
+                <p className="text-green-400 text-xl">{indicadores.economiaTotalValor || 'R$ 0'}</p>
+              </div>
+              <div>
+                <p className="text-white/60 text-sm mb-1">Tempo Médio de Aprovação</p>
+                <p className="text-white text-xl">{indicadores.tempoMedioAprovacao || '0 dias'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
