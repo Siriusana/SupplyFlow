@@ -121,9 +121,10 @@ export class RelatorioController {
         });
 
         gastosMensais = meses.map((mes) => ({
-          name: mes,
-          valor: gastosPorMes[mes]?.valor || 0,
-          meta: null,
+           id: meses.indexOf(mes) + 1,
+           name: mes,
+           valor: gastosPorMes[mes]?.valor || 0,
+           meta: null,
         }));
       }
 
