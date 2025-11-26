@@ -1,3 +1,7 @@
+// Rota raiz amigável
+app.get('/', (req, res) => {
+  res.send('SupplyFlow API está rodando!');
+});
 import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
