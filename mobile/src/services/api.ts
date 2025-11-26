@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Exemplo: const API_BASE_URL = 'http://192.168.15.115:8080/api';
 const API_BASE_URL = __DEV__ 
   ? 'http://192.168.15.115:8080/api'  // Altere para o IP da sua máquina
-  : 'http://localhost:8080/api';
+  : 'https://supplyflow.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
