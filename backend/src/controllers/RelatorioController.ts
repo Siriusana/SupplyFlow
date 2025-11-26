@@ -124,7 +124,7 @@ export class RelatorioController {
            id: meses.indexOf(mes) + 1,
            name: mes,
            valor: gastosPorMes[mes]?.valor || 0,
-           meta: null,
+           meta: undefined,
         }));
       }
 
