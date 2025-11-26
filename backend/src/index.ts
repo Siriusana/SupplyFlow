@@ -1,16 +1,4 @@
-import 'reflect-metadata';
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { initializeDatabase } from './config/database';
-import { loadInitialData } from './config/DataLoader';
-import routes from './routes';
-
 dotenv.config();
-
-const app = express();
-const PORT = Number(process.env.PORT) || 8080;
-
 // Rota raiz amigável
 app.get('/', (req, res) => {
   res.send('SupplyFlow API está rodando!');
