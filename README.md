@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SupplyFlow - Sistema de Gestão de Compras
 
 Sistema completo de gestão de compras com backend Node.js, frontend web React e aplicativo mobile React Native.
@@ -144,3 +145,11 @@ Todos os scripts estão na raiz do projeto e podem ser executados diretamente:
 - Os scripts verificam e instalam dependências automaticamente se necessário
 - Para testar o app mobile em dispositivo físico, use o IP da máquina na configuração da API
 - O aplicativo mobile utiliza os mesmos endpoints da API do frontend web
+=======
+  ## Running the code
+
+  Run `npm i` to install the dependencies.
+
+  Run `npm run dev` to start the development server.
+  
+>>>>>>> 6f4803026693b194fedac2b6f40629d02d1e7dc0
