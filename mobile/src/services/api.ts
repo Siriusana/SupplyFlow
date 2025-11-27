@@ -1,13 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Para dispositivo físico, usar IP da máquina ao invés de localhost
-// IMPORTANTE: Altere o IP abaixo para o IP da sua máquina na rede local
-// Para descobrir seu IP: Linux/Mac: `ifconfig` ou `ip addr`, Windows: `ipconfig`
-// Exemplo: const API_BASE_URL = 'http://192.168.15.115:8080/api';
-const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.15.115:8080/api'  // Altere para o IP da sua máquina
-  : 'https://supplyflow.onrender.com/api';
+// URL fixa para o Render.
+// Isso garante que funcione tanto no emulador quanto no celular físico (via APK ou Expo Go)
+const API_BASE_URL = 'https://supplyflow.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -132,4 +128,3 @@ export const relatoriosAPI = {
 };
 
 export default api;
-
